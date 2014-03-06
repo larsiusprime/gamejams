@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<image value="eye.png"/>
+	<hp value="1"/>
+	<speed value="1"/>
+	<behavior value="seek"/>
+</data>

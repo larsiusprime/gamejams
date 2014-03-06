@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<image value="dude.png"/>
+	<hp value="1"/>
+	<speed value="1"/>
+	<behavior value="player"/>
+	<weapon damage="1" size="small" speed="2" cooldown="0.2" color="0xFFFF00" />
+</data>
