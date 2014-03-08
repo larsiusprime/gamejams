@@ -21,8 +21,8 @@ class Stats
 	}
 	
 	public function fromXML(xml:Fast):Void {
-		hp = U.xml_f(xml.x, "hp", 1);
-		speed = U.xml_i(xml.x, "speed", 1);
+		hp = U.xml_f(xml.node.hp.x,"value", 1);
+		speed = U.xml_f(xml.node.speed.x, "value", 1);
 	}
 	
 }

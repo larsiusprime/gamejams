@@ -1,5 +1,6 @@
 package ;
 import flixel.addons.ui.U;
+import flixel.FlxObject;
 import flixel.FlxSprite;
 import flixel.util.FlxTimer;
 import haxe.Constraints.Function;
@@ -19,6 +20,7 @@ class Creature extends FlxSprite
 	public function new(Name:String) 
 	{
 		super();
+		solid = true;
 		name = Name;
 		var xml:Fast = U.xml(name, "xml", true, "assets/data/creatures/");
 		fromXML(xml);
@@ -36,6 +38,11 @@ class Creature extends FlxSprite
 			case "seek":
 			case "player":
 		}
+		
+		width *= 0.9;
+		height *= 0.9;
+		offset.x = (frameWidth - width) / 2;
+		offset.y = (frameHeight - height) / 2;
 	}
 	
 	public override function update():Void {
@@ -56,8 +63,8 @@ class Creature extends FlxSprite
 			b.owner = this;
 			b.x = x + width / 2;
 			b.y = y + height / 2;
-			b.velocity.x = velocity.x + sx * stats.speed * Stats.SPEED_CONST;
-			b.velocity.y = velocity.y + sy * stats.speed * Stats.SPEED_CONST;
+			b.velocity.x = sx * weapon.speed * Stats.SPEED_CONST;
+			b.velocity.y = sy * weapon.speed * Stats.SPEED_CONST;
 		}
 	}
 	

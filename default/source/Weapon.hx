@@ -16,6 +16,7 @@ class Weapon
 	public var size:String = "small";
 	public var cooldown:Float = 0.1;
 	public var color:Int = FlxColor.WHITE;
+	public var speed:Float = 1;
 	public var available(default, null):Bool = false;
 	
 	public function new(xml:Fast) 
@@ -28,6 +29,7 @@ class Weapon
 	public function fromXML(xml:Fast):Void {
 		if(xml.hasNode.weapon){
 			size = U.xml_str(xml.node.weapon.x, "size", true, "small");
+			speed = U.xml_f(xml.node.weapon.x, "speed", 1);
 			damage = U.xml_f(xml.node.weapon.x, "damage", 0);
 			cooldown = U.xml_f(xml.node.weapon.x, "cooldown", 0.1);
 			color = U.parseHex(U.xml_str(xml.node.weapon.x, "color", true, "0xFFFFFF"), false, true, 0xFFFFFF);

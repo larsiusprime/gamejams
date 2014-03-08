@@ -2,7 +2,7 @@
 <data>
 	<image value="dude.png"/>
 	<hp value="1"/>
-	<speed value="1"/>
+	<speed value="2"/>
 	<behavior value="player"/>
-	<weapon damage="1" size="small" speed="2" cooldown="0.2" color="0xFFFF00" />
+	<weapon damage="1" size="small" speed="3" cooldown="0.2" color="0xFFFF00" />
 </data>
