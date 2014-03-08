@@ -1,6 +1,7 @@
 Procedural Death Larsrynth
 ========
 
+![PDL game](pdlgame.png "Procedural Death Larsrynth")
 So this is the beginnings of a simple PDL game, kind of a cheap clone of the Binding of Isaac.
 
 Look at the source code to get a good idea of how to get started making games in flixel. 
