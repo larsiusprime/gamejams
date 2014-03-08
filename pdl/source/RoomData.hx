@@ -8,12 +8,13 @@ class RoomData
 {
 	public var x:Int = 0;
 	public var y:Int = 0;
-	public var connections:Array<IntPt> = [];
+	public var connections:Array<IntPt>;
 	
 	public function new(X:Int,Y:Int) 
 	{
 		x = X;
 		y = Y;
+		connections = new Array<IntPt>(); // Avoids a initilisation error compiling time.
 	}
 	
 	public function isConnected():Bool
