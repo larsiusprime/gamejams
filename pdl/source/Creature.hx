@@ -52,6 +52,18 @@ class Creature extends FlxSprite
 		}
 	}
 	
+	public function takeHit(b:Bullet):Void {
+		stats.hp -= b.damage;
+		if (stats.hp <= 0) {
+			kill();
+			onDeath();
+		}
+	}
+	
+	public function onDeath():Void {
+		
+	}
+	
 	public function doMove(dx:Float, dy:Float):Void {
 		velocity.x = dx * stats.speed * Stats.SPEED_CONST;
 		velocity.y = dy * stats.speed * Stats.SPEED_CONST;

@@ -80,10 +80,18 @@ class World extends FlxGroup
 	
 	private function collisions():Void {
 		FlxG.collide(group_terrain, group_creatures);
-		FlxG.collide(group_terrain, group_bullets, onCollideBullet);
+		FlxG.collide(group_terrain, group_bullets, onCollideTerrainBullet);
+		FlxG.overlap(group_creatures, group_bullets, onOverlapCreatureBullet);
 	}
 	
-	private function onCollideBullet(t:FlxTilemap, b:Bullet):Void {
+	private function onOverlapCreatureBullet(c:Creature, b:Bullet):Void {
+		if(c != b.owner){
+			c.takeHit(b);
+			b.kill();
+		}
+	}
+	
+	private function onCollideTerrainBullet(t:FlxTilemap, b:Bullet):Void {
 		b.kill();
 	}
 	

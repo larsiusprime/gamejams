@@ -27,11 +27,22 @@ class MenuState extends FlxState
 		start.broadcastToFlxUI = false;
 		add(start);
 		
-		var title = new FlxText(0, 0, FlxG.width, "HELLthCare", 8);
+		var title = new FlxText(0, 0, FlxG.width, "Procedural Death Larsrynth", 8);
 		title.alignment = "center";
 		title.x = (FlxG.width - title.width) / 2;
 		title.y = ((start.y - start.height) - title.height) / 2;
 		add(title);
+		
+		var instructions = new FlxText(0, 0, FlxG.width, "WASD to move, ARROWS to shoot, R to restart");
+		instructions.alignment = "center";
+		instructions.y = title.y + title.height * 2;
+		instructions.color = 0xFFFF00;
+		add(instructions);
+		
+		var credit = new FlxText(0, 0, FlxG.width, "by Lars A. Doucet, #ProceduralDeathJam No. 1", 8);
+		credit.alignment = "center";
+		credit.y = FlxG.height - credit.height * 4;
+		add(credit);
 	}
 	
 	private function onStart():Void {
