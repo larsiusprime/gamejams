@@ -13,6 +13,7 @@ import flixel.util.FlxMath;
 class PlayState extends FlxState
 {
 	private var world:World;
+	private var progress:Progress;
 	
 	public function new(level:LevelData = null):Void {
 		super();
@@ -28,8 +29,35 @@ class PlayState extends FlxState
 	}
 	
 	private function init():Void {
-		world = new World();
-		add(world);
+		progress = new Progress();
+		progress.level = 0;
+		nextLevel();
+	}
+	
+	public function nextLevel():Void {
+		destroyTheWorld();
+		
+		progress.level++;
+		if (progress.level > progress.maxLevel) {
+			FlxG.switchState(new WinState());
+		}else {
+			world = new World(progress, this);
+			add(world);
+		}
+	}
+	
+	public function gameOver():Void {
+		destroyTheWorld();
+		
+		FlxG.switchState(new LoseState());
+	}
+	
+	private function destroyTheWorld():Void {
+		if (world != null) {
+			remove(world, true);
+			world.destroy();
+			world = null;
+		}
 	}
 	
 	/**

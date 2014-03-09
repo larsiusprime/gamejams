@@ -18,6 +18,12 @@ class Weapon
 	public var color:Int = FlxColor.WHITE;
 	public var speed:Float = 1;
 	public var available(default, null):Bool = false;
+	public var type:Int = TYPE_TOUCH;
+	
+	public var only_vs:String = "";						//set this to ONLY affect one specific creature type (usually "dude")
+	
+	public static inline var TYPE_PROJECTILE:Int = 1;
+	public static inline var TYPE_TOUCH:Int = 0;
 	
 	public function new(xml:Fast) 
 	{
@@ -27,7 +33,16 @@ class Weapon
 	}
 	
 	public function fromXML(xml:Fast):Void {
-		if(xml.hasNode.weapon){
+		if (xml.hasNode.weapon) {
+			var typeStr:String = U.xml_str(xml.node.weapon.x, "type", true, "touch");
+			
+			switch(typeStr)
+			{
+				case "touch": 		type = TYPE_TOUCH;
+				case "projectile": 	type = TYPE_PROJECTILE;
+			}
+			
+			only_vs = U.xml_str(xml.node.weapon.x, "only_vs", true, "");
 			size = U.xml_str(xml.node.weapon.x, "size", true, "small");
 			speed = U.xml_f(xml.node.weapon.x, "speed", 1);
 			damage = U.xml_f(xml.node.weapon.x, "damage", 0);
@@ -37,7 +52,7 @@ class Weapon
 		}
 	}
 	
-	public function getBullet():Bullet{
+	public function getBullet():Bullet {
 		var b:Bullet = World.request("bullet", this, null);
 		b.damage = damage;
 		b.loadGraphic("assets/images/bullet_" + size + ".png");

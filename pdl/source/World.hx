@@ -47,13 +47,18 @@ class World extends FlxGroup
 	
 	public var progress:Progress;
 	
-	public function new() 
+	public var state:PlayState;
+	
+	public function new(Prog:Progress,State:PlayState) 
 	{
 		super();
 		
-		progress = new Progress();
+		state = State;
+		progress = Prog;
 		
 		instance = this;
+		
+		trace("Welcome to Level " + progress.level);
 		
 		dungeon = new DungeonData(progress.level);
 		while (dungeon.error) {
@@ -89,6 +94,18 @@ class World extends FlxGroup
 		FlxG.camera.follow(dude, FlxCamera.STYLE_TOPDOWN);
 	}
 	
+	public override function destroy():Void {
+		super.destroy();
+	}
+	
+	public function gameOver():Void {
+		state.gameOver();
+	}
+	
+	public function nextLevel():Void {
+		state.nextLevel();
+	}
+	
 	public override function update():Void {
 		checkControls();
 		super.update();
@@ -97,9 +114,14 @@ class World extends FlxGroup
 	
 	private function collisions():Void {
 		FlxG.collide(group_terrain, group_creatures);
-		FlxG.collide(group_creatures, group_creatures);
+		FlxG.collide(group_creatures, group_creatures, onCollideCreatureCreature);
 		FlxG.collide(group_terrain, group_bullets, onCollideTerrainBullet);
 		FlxG.overlap(group_creatures, group_bullets, onOverlapCreatureBullet);
+	}
+	
+	private function onCollideCreatureCreature(a:Creature, b:Creature):Void {
+		a.onTouch(b);
+		b.onTouch(a);
 	}
 	
 	private function onCollideDoorCreature(t:FlxObject, c:FlxObject):Void {
@@ -107,6 +129,14 @@ class World extends FlxGroup
 		var creature:Creature = cast c;
 		if (creature == dude) {
 			tile.tilemap.setTileByIndex(tile.mapIndex, TILE_FLOOR, true);
+		}
+	}
+	
+	private function onCollideStairsCreature(t:FlxObject, c:FlxObject):Void {
+		var tile:FlxTile = cast t;
+		var creature:Creature = cast c;
+		if (creature == dude) {
+			nextLevel();
 		}
 	}
 	
@@ -165,11 +195,13 @@ class World extends FlxGroup
 				drawx = ROOM_GUTTER + (ROOM_MAXW * xx) + (ROOM_GUTTER * xx) + room_off_x;
 				drawy = ROOM_GUTTER + (ROOM_MAXH * yy) + (ROOM_GUTTER * yy) + room_off_y;
 				
-				//Spawn monsters!
-				var spawn:SpawnData;
-				for (spawn in dungeon.spawns) {
-					if (FlxRandom.float() < spawn.chance) {
-						spawnCreatures(spawn, drawx+1, drawy+1, drawx+room_w-1, drawy+room_h-1);
+				if(dungeon.grid[xx][yy].type != RoomData.ROOM_START){
+					//Spawn monsters!
+					var spawn:SpawnData;
+					for (spawn in dungeon.spawns) {
+						if (FlxRandom.float() < spawn.chance) {
+							spawnCreatures(spawn, drawx+1, drawy+1, drawx+room_w-1, drawy+room_h-1);
+						}
 					}
 				}
 				
@@ -266,12 +298,13 @@ class World extends FlxGroup
 		tilemap.solid = true;
 		tilemap.loadMap(arr, "assets/images/tileset.png", TILE_SIZE, TILE_SIZE);
 		for (i in 0...10) {
-			if(i == TILE_EMPTY || i == TILE_FLOOR || i == TILE_STAIRS_UP || i == TILE_STAIRS_DOWN){
+			if(i == TILE_EMPTY || i == TILE_FLOOR || i == TILE_STAIRS_UP){
 				tilemap.setTileProperties(i, FlxObject.NONE);
 			}else if (i == TILE_DOOR) {
 				tilemap.setTileProperties(i, FlxObject.ANY, onCollideDoorCreature, Creature);
-			}
-			else {
+			}else if (i == TILE_STAIRS_DOWN) {
+				tilemap.setTileProperties(i, FlxObject.ANY, onCollideStairsCreature, Creature);
+			}else {
 				tilemap.setTileProperties(i, FlxObject.ANY);
 			}
 		}
@@ -367,7 +400,13 @@ class World extends FlxGroup
 	}
 	
 	public static function event(name:String, sender:Dynamic, data:Dynamic, ?params:Array<Dynamic> = null):Void {
-		
+		switch(name) {
+			case "creature_killed":
+				var creature:Creature = cast sender;
+				if (creature == instance.dude) {
+					instance.gameOver();
+				}
+		}
 	}
 	
 	public static function request(name:String, sender:Dynamic, data:Dynamic, ?params:Array<Dynamic>=null):Dynamic {

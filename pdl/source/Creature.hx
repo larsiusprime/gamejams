@@ -1,5 +1,6 @@
 package ;
 import behaviors.IBehavior;
+import behaviors.Player;
 import behaviors.Seek;
 import behaviors.Wander;
 import flixel.addons.ui.U;
@@ -18,6 +19,7 @@ class Creature extends FlxSprite
 	public var stats:Stats;
 	public var behaviors:Array<IBehavior>;
 	public var weapon:Weapon;
+	public var type:String;
 	
 	public function new(Name:String) 
 	{
@@ -54,16 +56,29 @@ class Creature extends FlxSprite
 		}
 	}
 	
-	public function takeHit(b:Bullet):Void {
-		stats.hp -= b.damage;
+	public function takeHit(?b:Bullet, ?w:Weapon):Void {
+		if(b != null){
+			stats.hp -= b.damage;
+		}
+		if (w != null) {
+			stats.hp -= w.damage;
+		}
 		if (stats.hp <= 0) {
 			kill();
 			onDeath();
 		}
 	}
 	
+	public function onTouch(other:Creature):Void {
+		if (other.weapon != null && other.weapon.type == Weapon.TYPE_TOUCH) {
+			if (other.weapon.only_vs == "" || other.weapon.only_vs == name) {	//if the other creature's touch affects everything OR just me
+				takeHit(other.weapon);
+			}
+		}
+	}
+	
 	public function onDeath():Void {
-		
+		World.event("creature_killed", this, name);
 	}
 	
 	public function doMove(dx:Float, dy:Float):Void {
@@ -72,7 +87,7 @@ class Creature extends FlxSprite
 	}
 	
 	public function doShoot(sx:Float, sy:Float):Void {
-		if (weapon.available) 
+		if (weapon.available && weapon.type == Weapon.TYPE_PROJECTILE) 
 		{
 			var b:Bullet = weapon.getBullet();
 			b.owner = this;
@@ -92,6 +107,9 @@ class Creature extends FlxSprite
 			for (bNode in xml.nodes.behavior) {
 				var behavior:String = U.xml_str(bNode.x, "value", true);
 				switch(behavior) {
+					case "player":
+						var player:Player = new Player();
+						behaviors.push(player);
 					case "seek":
 						var dude:Creature = cast World.request("dude", this, null);
 						var seek:Seek = new Seek(dude);

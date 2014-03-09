@@ -29,7 +29,6 @@ class DungeonData
 	{
 		level = Level;
 		spawns = [];
-		
 		var xml:Fast = U.xml("dungeon", "xml", true, "assets/data/");
 		if (xml != null) {
 			for (lNode in xml.nodes.level) {

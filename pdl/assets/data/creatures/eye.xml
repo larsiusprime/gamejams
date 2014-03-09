@@ -4,4 +4,5 @@
 	<hp value="1"/>
 	<speed value="1"/>
 	<behavior value="seek"/>
+	<weapon type="touch" only_vs="dude" damage="1"/>
 </data>

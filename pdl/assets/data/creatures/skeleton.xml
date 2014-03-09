@@ -4,4 +4,5 @@
 	<hp value="1"/>
 	<speed value="1"/>
 	<behavior value="wander" timeMin="1" timeMax="3"/>
+	<weapon type="touch" only_vs="dude" damage="1"/>
 </data>
