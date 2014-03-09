@@ -5,7 +5,6 @@ import flixel.addons.ui.U;
 import flixel.FlxObject;
 import flixel.FlxSprite;
 import flixel.util.FlxTimer;
-//import haxe.Constraints.Function; // DOesn't seem to exists with Haxe/Haxeflixel releases
 import haxe.xml.Fast;
 
 /**
