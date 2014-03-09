@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<image value="skeleton.png"/>
+	<hp value="1"/>
+	<speed value="1"/>
+	<behavior value="wander" timeMin="1" timeMax="3"/>
+</data>

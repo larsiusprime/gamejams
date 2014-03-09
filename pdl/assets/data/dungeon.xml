@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+	<level value="0">
+		<dungeon width="3-5" height="3-5"/>
+		<room width="10-20" height="10-20"/>
+		<spawn value="eye" chance="0.25" count="3-5"/>
+		<spawn value="skeleton" chance="0.50" count="5-10"/>
+	</level>
+</data>

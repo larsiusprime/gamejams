@@ -1,6 +1,9 @@
 package ;
 import flash.Lib;
+import flixel.addons.ui.U;
+import flixel.util.FlxPoint;
 import flixel.util.FlxRandom;
+import haxe.xml.Fast;
 
 /**
  * ...
@@ -10,14 +13,66 @@ class DungeonData
 {
 	public var width:Int = 3;
 	public var height:Int = 3;
+	
+	public var roomWidthRange:FlxPoint;
+	public var roomHeightRange:FlxPoint;
+	
 	public var grid:Array<Array<RoomData>> = null;
 	
 	public var error:Bool = false;
 	
-	public function new() 
+	public var level:Int = 0;
+	
+	public var spawns:Array<SpawnData> = null;
+	
+	public function new(Level:Int) 
 	{
+		level = Level;
+		spawns = [];
+		
+		var xml:Fast = U.xml("dungeon", "xml", true, "assets/data/");
+		if (xml != null) {
+			for (lNode in xml.nodes.level) {
+				var l:Int = U.xml_i(lNode.x, "value", 0);
+				if (l == level) {
+					if (lNode.hasNode.dungeon) {
+						var widthString = U.xml_str(lNode.node.dungeon.x, "width", true);
+						var heightString = U.xml_str(lNode.node.dungeon.x, "height", true);
+						if(widthString != ""){
+							var wArr:Array<String> = widthString.split("-");
+							width = FlxRandom.intRanged(Std.parseInt(wArr[0]), Std.parseInt(wArr[1]));
+						}
+						if (heightString != "") {
+							var hArr:Array<String> = heightString.split("-");
+							height = FlxRandom.intRanged(Std.parseInt(hArr[0]), Std.parseInt(hArr[1]));
+						}
+						trace("Generating Dungeon @ Level " + level + ", size = (" + width + "," + height + ")");
+					}
+					if (lNode.hasNode.room) {
+						var widthString = U.xml_str(lNode.node.room.x, "width", true);
+						var heightString = U.xml_str(lNode.node.room.x, "height", true);
+						if(widthString != ""){
+							var wArr:Array<String> = widthString.split("-");
+							roomWidthRange = new FlxPoint(Std.parseInt(wArr[0]), Std.parseInt(wArr[1]));
+						}
+						if (heightString != "") {
+							var hArr:Array<String> = heightString.split("-");
+							roomHeightRange = new FlxPoint(Std.parseInt(hArr[0]), Std.parseInt(hArr[1]));
+						}
+						trace("--> Room size variance = ( " + roomWidthRange + " , " + roomHeightRange + " )");
+					}
+					if (lNode.hasNode.spawn) {
+						for (sNode in lNode.nodes.spawn) {
+							spawns.push(new SpawnData(sNode));
+						}
+					}
+				}
+			}
+		}
+		
 		generate();
 	}
+
 	
 	public function generate():Void {
 		grid = new Array<Array<RoomData>>();
@@ -25,7 +80,7 @@ class DungeonData
 		for (w in 0...width) {
 			grid[w] = new Array<RoomData>();
 			for (h in 0...height) {
-				grid[w].push(new RoomData(w,h));
+				grid[w].push(new RoomData(w,h,randRoomWidth(),randRoomHeight()));
 				i++;
 			}
 		}
@@ -34,6 +89,7 @@ class DungeonData
 		var Y:Int = FlxRandom.intRanged(0, height - 1);
 		
 		var currRoom:RoomData = grid[X][Y];
+		currRoom.type = RoomData.ROOM_START;
 		var result:RoomData;
 		
 		var failsafe:Int = 0;
@@ -54,10 +110,12 @@ class DungeonData
 		failsafe = 0;
 		
 		while (!allRoomsConnected() && failsafe < 999) {
-			currRoom = getRoom(false);						//get connected room
+			currRoom = getRoom(false);						//get unconnected room
 			connectToRandomNeighbor(currRoom, 1, true);		//try to connect it to an unconnected room
 			failsafe++;
 		}
+		
+		currRoom.type = RoomData.ROOM_EXIT;
 		
 		if (failsafe >= 999) {
 			error = true;
@@ -84,6 +142,16 @@ class DungeonData
 			return;
 		}
 		failsafe = 0;
+	}
+	
+	/**************PRIVATE***************/
+		
+	private function randRoomWidth():Int {
+		return Std.int(FlxRandom.floatRanged(roomWidthRange.x, roomWidthRange.y));
+	}
+	
+	private function randRoomHeight():Int {
+		return Std.int(FlxRandom.floatRanged(roomHeightRange.x, roomHeightRange.y));
 	}
 	
 	private function connectToRandomNeighbor(room:RoomData, ?ConnectCode=0, ?MustBeOriginalConnection=false):RoomData{

@@ -1,6 +1,7 @@
 package ;
 import behaviors.IBehavior;
 import behaviors.Seek;
+import behaviors.Wander;
 import flixel.addons.ui.U;
 import flixel.FlxObject;
 import flixel.FlxSprite;
@@ -71,7 +72,8 @@ class Creature extends FlxSprite
 	}
 	
 	public function doShoot(sx:Float, sy:Float):Void {
-		if (weapon.available) {
+		if (weapon.available) 
+		{
 			var b:Bullet = weapon.getBullet();
 			b.owner = this;
 			b.x = x + width / 2;
@@ -94,6 +96,11 @@ class Creature extends FlxSprite
 						var dude:Creature = cast World.request("dude", this, null);
 						var seek:Seek = new Seek(dude);
 						behaviors.push(seek);
+					case "wander":
+						var timeMin:Float = U.xml_f(bNode.x, "timeMin", 1);
+						var timeMax:Float = U.xml_f(bNode.x, "timeMax", 1);
+						var wander:Wander = new Wander(timeMin, timeMax);
+						behaviors.push(wander);
 				}
 			}
 		}

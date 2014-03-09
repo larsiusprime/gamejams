@@ -9,6 +9,8 @@ import flixel.group.FlxGroup;
 import flixel.input.keyboard.FlxKey;
 import flixel.tile.FlxTile;
 import flixel.tile.FlxTilemap;
+import flixel.util.FlxPoint;
+import flixel.util.FlxRandom;
 
 /**
  * ...
@@ -21,6 +23,8 @@ class World extends FlxGroup
 	
 	public var dungeon:DungeonData;
 	
+	public var tilemap:FlxTilemap;
+	
 	public var group_terrain:FlxGroup;
 	public var group_creatures:FlxGroup;
 	public var group_bullets:FlxGroup;
@@ -29,48 +33,55 @@ class World extends FlxGroup
 	
 	public var MAX_WORLD_WIDTH:Int = 1000;
 	public var MAX_WORLD_HEIGHT:Int = 1000;
+	
 	public static inline var TILE_SIZE:Int = 32;
 	
-	public static inline var ROOM_SIZE:Int = 11;
 	public static inline var ROOM_GUTTER:Int = 5;
 	
 	public static inline var TILE_EMPTY:Int = 0;
 	public static inline var TILE_FLOOR:Int = 1;
 	public static inline var TILE_WALL:Int = 2;
-	public static inline var TILE_STAIRS:Int = 3;
-	public static inline var TILE_DOOR:Int = 4;
+	public static inline var TILE_STAIRS_DOWN:Int = 3;
+	public static inline var TILE_STAIRS_UP:Int = 4;
+	public static inline var TILE_DOOR:Int = 5;
+	
+	public var progress:Progress;
 	
 	public function new() 
 	{
 		super();
+		
+		progress = new Progress();
+		
 		instance = this;
 		
-		dungeon = new DungeonData();
+		dungeon = new DungeonData(progress.level);
 		while (dungeon.error) {
-			dungeon = new DungeonData();
+			dungeon = new DungeonData(progress.level);
 		}
 		
 		group_terrain = new FlxGroup();
 		group_creatures = new FlxGroup();
 		group_bullets = new FlxGroup();
 		
-		makeTerrain();
-		
 		add(group_terrain);
 		add(group_creatures);
 		add(group_bullets);
 		
 		dude = new Creature("dude");
+		
+		makeTerrain();
+		
 		group_creatures.add(dude);
 		
-		var creature = new Creature("eye");
-		group_creatures.add(creature);
+		var arr:Array<FlxPoint> = tilemap.getTileCoords(TILE_STAIRS_UP);
 		
-		dude.x = TILE_SIZE * MAX_WORLD_WIDTH / 2;
-		dude.y = TILE_SIZE * MAX_WORLD_HEIGHT / 2;
-		
-		creature.x = dude.x + 100;
-		creature.y = dude.y + 100;
+		//Start on the stairs!
+		if (arr != null && arr.length >= 1)
+		{
+			dude.x = arr[0].x + (-dude.width)  / 2;
+			dude.y = arr[0].y + (-dude.height) / 2;
+		}
 		
 		controls = new Controls();
 		
@@ -86,6 +97,7 @@ class World extends FlxGroup
 	
 	private function collisions():Void {
 		FlxG.collide(group_terrain, group_creatures);
+		FlxG.collide(group_creatures, group_creatures);
 		FlxG.collide(group_terrain, group_bullets, onCollideTerrainBullet);
 		FlxG.overlap(group_creatures, group_bullets, onOverlapCreatureBullet);
 	}
@@ -113,13 +125,16 @@ class World extends FlxGroup
 	
 	private function makeTerrain():Void 
 	{
-		var t:FlxTilemap = new FlxTilemap();
+		tilemap = new FlxTilemap();
 		
-		MAX_WORLD_WIDTH = (ROOM_SIZE * dungeon.width) + (ROOM_GUTTER * (dungeon.width+1));
-		MAX_WORLD_HEIGHT = (ROOM_SIZE * dungeon.height) + (ROOM_GUTTER * (dungeon.height+1));
+		var ROOM_MAXW:Int = Std.int(dungeon.roomWidthRange.x);
+		var ROOM_MAXH:Int = Std.int(dungeon.roomHeightRange.y);
 		
-		t.widthInTiles = MAX_WORLD_WIDTH;
-		t.heightInTiles = MAX_WORLD_HEIGHT;
+		MAX_WORLD_WIDTH = (ROOM_MAXW * dungeon.width) + (ROOM_GUTTER * (dungeon.width+1));
+		MAX_WORLD_HEIGHT = (ROOM_MAXH * dungeon.height) + (ROOM_GUTTER * (dungeon.height+1));
+		
+		tilemap.widthInTiles = MAX_WORLD_WIDTH;
+		tilemap.heightInTiles = MAX_WORLD_HEIGHT;
 		
 		var arr:Array<Int> = [];
 		var length:Int = MAX_WORLD_HEIGHT * MAX_WORLD_WIDTH;
@@ -136,16 +151,32 @@ class World extends FlxGroup
 		var dx:Int = 0;
 		var dy:Int = 0;
 		
+		//Draw the rooms!
+		
 		for (xx in 0...dungeon.width) {
 			for (yy in 0...dungeon.height) {
 				
-				drawx = ROOM_GUTTER + (ROOM_SIZE * xx) + (ROOM_GUTTER * xx);
-				drawy = ROOM_GUTTER + (ROOM_SIZE * yy) + (ROOM_GUTTER * yy);
+				var room_w:Int = dungeon.grid[xx][yy].width;
+				var room_h:Int = dungeon.grid[xx][yy].height;
 				
-				for (jx in 0...ROOM_SIZE) {
-					for (jy in 0...ROOM_SIZE) {
+				var room_off_x:Int = Std.int((ROOM_MAXW - room_w)/2);			//if max width is 10, but this room is 8, diff is 2, offset is 1
+				var room_off_y:Int = Std.int((ROOM_MAXH - room_h)/2);			//if max width is 10, but this room is 7, diff is 3, offset is 1
+				
+				drawx = ROOM_GUTTER + (ROOM_MAXW * xx) + (ROOM_GUTTER * xx) + room_off_x;
+				drawy = ROOM_GUTTER + (ROOM_MAXH * yy) + (ROOM_GUTTER * yy) + room_off_y;
+				
+				//Spawn monsters!
+				var spawn:SpawnData;
+				for (spawn in dungeon.spawns) {
+					if (FlxRandom.float() < spawn.chance) {
+						spawnCreatures(spawn, drawx+1, drawy+1, drawx+room_w-1, drawy+room_h-1);
+					}
+				}
+				
+				for (jx in 0...room_w) {
+					for (jy in 0...room_h) {
 						value = TILE_FLOOR;
-						if ((jx == 0 || jx == ROOM_SIZE-1) || jy == 0 || jy == ROOM_SIZE-1) {
+						if ((jx == 0 || jx == room_w-1) || jy == 0 || jy == room_h-1) {
 							value = TILE_WALL;
 						}
 						dx = drawx + jx;
@@ -156,28 +187,42 @@ class World extends FlxGroup
 			}
 		}
 		
+		//Draw the corridors
+		
 		for (xx in 0...dungeon.width) {
 			for (yy in 0...dungeon.height) {
 				var room:RoomData = dungeon.grid[xx][yy];
 				
 				if (room.isConnected())
 				{
-					drawx = ROOM_GUTTER + (ROOM_SIZE * room.x) + (ROOM_GUTTER * room.x);
-					drawy = ROOM_GUTTER + (ROOM_SIZE * room.y) + (ROOM_GUTTER * room.y);
+					drawx = ROOM_GUTTER + (ROOM_MAXW * room.x) + (ROOM_GUTTER * room.x);
+					drawy = ROOM_GUTTER + (ROOM_MAXH * room.y) + (ROOM_GUTTER * room.y);
 					
-					var half:Int = Std.int(ROOM_SIZE / 2);
+					drawx += Std.int(ROOM_MAXW/2);
+					drawy += Std.int(ROOM_MAXH/2);
 					
-					drawx += half;
-					drawy += half;
+					var dx:Int = drawx;
+					var dy:Int = drawy;
+					
+					if (room.type == RoomData.ROOM_EXIT) 
+					{
+						trace("Room Exit = (" + room.x + "," + room.y + ")");
+						writeToArr(arr, (dy * MAX_WORLD_WIDTH) + dx, TILE_STAIRS_DOWN, TILE_FLOOR);
+					}
+					else if (room.type == RoomData.ROOM_START) 
+					{
+						trace("Room Start = (" + room.x + "," + room.y + ")");
+						writeToArr(arr, (dy * MAX_WORLD_WIDTH) + dx, TILE_STAIRS_UP, TILE_FLOOR);
+					}
 					
 					var ip:IntPt;
 					for (ip in room.connections) {
 						
-						destx = ROOM_GUTTER + (ROOM_SIZE * ip.x) + (ROOM_GUTTER * ip.x);
-						desty = ROOM_GUTTER + (ROOM_SIZE * ip.y) + (ROOM_GUTTER * ip.y);
+						destx = ROOM_GUTTER + (ROOM_MAXW * ip.x) + (ROOM_GUTTER * ip.x);
+						desty = ROOM_GUTTER + (ROOM_MAXH * ip.y) + (ROOM_GUTTER * ip.y);
 						
-						destx += half;
-						desty += half;
+						destx += Std.int(ROOM_MAXW/2);
+						desty += Std.int(ROOM_MAXH/2);
 						
 						if (destx == drawx) {
 							for (i in drawy...desty + 1) {
@@ -188,7 +233,7 @@ class World extends FlxGroup
 								
 								if (arr[index] == TILE_WALL) {
 									arr[index] = TILE_DOOR;
-								}else{
+								}else if(arr[index] != TILE_STAIRS_UP && arr[index] != TILE_STAIRS_DOWN){
 									arr[index] = TILE_FLOOR;
 								}
 								
@@ -205,7 +250,7 @@ class World extends FlxGroup
 								
 								if (arr[index] == TILE_WALL) {
 									arr[index] = TILE_DOOR;
-								}else{
+								}else if(arr[index] != TILE_STAIRS_UP && arr[index] != TILE_STAIRS_DOWN){
 									arr[index] = TILE_FLOOR;
 								}
 								
@@ -214,30 +259,25 @@ class World extends FlxGroup
 							}
 						}
 					}
-					
-					
 				}
-				
-				
-				
 			}
 		}
 		
-		t.solid = true;
-		t.loadMap(arr, "assets/images/tileset.png", TILE_SIZE, TILE_SIZE);
+		tilemap.solid = true;
+		tilemap.loadMap(arr, "assets/images/tileset.png", TILE_SIZE, TILE_SIZE);
 		for (i in 0...10) {
-			if(i == TILE_EMPTY || i == TILE_FLOOR){
-				t.setTileProperties(i, FlxObject.NONE);
+			if(i == TILE_EMPTY || i == TILE_FLOOR || i == TILE_STAIRS_UP || i == TILE_STAIRS_DOWN){
+				tilemap.setTileProperties(i, FlxObject.NONE);
 			}else if (i == TILE_DOOR) {
-				t.setTileProperties(i, FlxObject.ANY, onCollideDoorCreature, Creature);
+				tilemap.setTileProperties(i, FlxObject.ANY, onCollideDoorCreature, Creature);
 			}
 			else {
-				t.setTileProperties(i, FlxObject.ANY);
+				tilemap.setTileProperties(i, FlxObject.ANY);
 			}
 		}
 		
-		group_terrain.add(t);
-		FlxG.worldBounds.set(0, 0, t.width, t.height);
+		group_terrain.add(tilemap);
+		FlxG.worldBounds.set(0, 0, tilemap.width, tilemap.height);
 	}
 	
 	private function writeToArr(arr:Array<Int>, i:Int, Value:Int, ValueCheck:Int = -1, MatchTrue:Bool=true):Void {
@@ -246,6 +286,32 @@ class World extends FlxGroup
 		}else {
 			if ((arr[i] == ValueCheck) == MatchTrue) {
 				arr[i] = Value;
+			}
+		}
+	}
+	
+	private function spawnCreatures(spawn:SpawnData, ulx:Int, uly:Int, lrx:Int, lry:Int):Void {
+		var count:Int = Std.int(FlxRandom.floatRanged(spawn.countRange.x, spawn.countRange.y));
+		trace("Spawning " + count + "x of creature type\"" + spawn.name + "\"");
+		
+		var xx:Int = Std.int((ulx + lrx) / 2);
+		var yy:Int = Std.int((lrx + lry) / 2);
+		var existLocs:Array<String> = [xx+","+yy];		//no spawning in middle square
+		
+		for (i in 0...count) {
+			var failsafe:Int = 0;
+			while (existLocs.indexOf(xx + "," + yy) != -1 && failsafe < 99) {
+				xx = FlxRandom.intRanged(ulx, lrx);
+				yy = FlxRandom.intRanged(uly, lry);
+				failsafe++;
+			}
+			if (failsafe < 99) {
+				existLocs.push(xx + "," + yy);
+				var c:Creature = new Creature(spawn.name);
+				c.x = xx * TILE_SIZE;
+				c.y = yy * TILE_SIZE;
+				group_creatures.add(c);
+				trace("spawned 1 @ (" + c.x + "," + c.y + ")");
 			}
 		}
 	}
