@@ -1,4 +1,6 @@
 package ;
+import behaviors.IBehavior;
+import behaviors.Seek;
 import flixel.addons.ui.U;
 import flixel.FlxObject;
 import flixel.FlxSprite;
@@ -14,7 +16,7 @@ class Creature extends FlxSprite
 {
 	public var name:String;
 	public var stats:Stats;
-	public var behavior:Void->Void = null;
+	public var behaviors:Array<IBehavior>;
 	public var weapon:Weapon;
 	
 	public function new(Name:String) 
@@ -33,11 +35,7 @@ class Creature extends FlxSprite
 		stats = new Stats(xml);
 		weapon = new Weapon(xml);
 		
-		var behavior:String = U.xml_str(xml.node.behavior.x, "value", true);
-		switch(behavior) {
-			case "seek":
-			case "player":
-		}
+		setupBehaviors(xml);
 		
 		width *= 0.9;
 		height *= 0.9;
@@ -47,8 +45,12 @@ class Creature extends FlxSprite
 	
 	public override function update():Void {
 		super.update();
-		if (behavior != null) {
-			behavior();
+		behave();
+	}
+	
+	public function behave():Void {
+		for (b in behaviors) {
+			b.apply(this);
 		}
 	}
 	
@@ -82,6 +84,20 @@ class Creature extends FlxSprite
 	
 	/*******BEHAVIORS*********/
 	
-	
+	private function setupBehaviors(xml:Fast):Void {
+		behaviors = [];
+		
+		if(xml.hasNode.behavior){		
+			for (bNode in xml.nodes.behavior) {
+				var behavior:String = U.xml_str(bNode.x, "value", true);
+				switch(behavior) {
+					case "seek":
+						var dude:Creature = cast World.request("dude", this, null);
+						var seek:Seek = new Seek(dude);
+						behaviors.push(seek);
+				}
+			}
+		}
+	}
 	
 }

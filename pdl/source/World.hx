@@ -7,6 +7,7 @@ import flixel.FlxObject;
 import flixel.FlxSprite;
 import flixel.group.FlxGroup;
 import flixel.input.keyboard.FlxKey;
+import flixel.tile.FlxTile;
 import flixel.tile.FlxTilemap;
 
 /**
@@ -33,10 +34,16 @@ class World extends FlxGroup
 	public static inline var ROOM_SIZE:Int = 11;
 	public static inline var ROOM_GUTTER:Int = 5;
 	
+	public static inline var TILE_EMPTY:Int = 0;
+	public static inline var TILE_FLOOR:Int = 1;
+	public static inline var TILE_WALL:Int = 2;
+	public static inline var TILE_STAIRS:Int = 3;
+	public static inline var TILE_DOOR:Int = 4;
 	
 	public function new() 
 	{
 		super();
+		instance = this;
 		
 		dungeon = new DungeonData();
 		while (dungeon.error) {
@@ -67,7 +74,6 @@ class World extends FlxGroup
 		
 		controls = new Controls();
 		
-		instance = this;
 		
 		FlxG.camera.follow(dude, FlxCamera.STYLE_TOPDOWN);
 	}
@@ -82,6 +88,14 @@ class World extends FlxGroup
 		FlxG.collide(group_terrain, group_creatures);
 		FlxG.collide(group_terrain, group_bullets, onCollideTerrainBullet);
 		FlxG.overlap(group_creatures, group_bullets, onOverlapCreatureBullet);
+	}
+	
+	private function onCollideDoorCreature(t:FlxObject, c:FlxObject):Void {
+		var tile:FlxTile = cast t;
+		var creature:Creature = cast c;
+		if (creature == dude) {
+			tile.tilemap.setTileByIndex(tile.mapIndex, TILE_FLOOR, true);
+		}
 	}
 	
 	private function onOverlapCreatureBullet(c:Creature, b:Bullet):Void {
@@ -116,7 +130,7 @@ class World extends FlxGroup
 		
 		var drawx:Int = 0;
 		var drawy:Int = 0;
-		var value:Int = 0;
+		var value:Int = TILE_EMPTY;
 		var destx:Int = 0;
 		var desty:Int = 0;
 		var dx:Int = 0;
@@ -130,9 +144,9 @@ class World extends FlxGroup
 				
 				for (jx in 0...ROOM_SIZE) {
 					for (jy in 0...ROOM_SIZE) {
-						value = 1;
+						value = TILE_FLOOR;
 						if ((jx == 0 || jx == ROOM_SIZE-1) || jy == 0 || jy == ROOM_SIZE-1) {
-							value = 2;
+							value = TILE_WALL;
 						}
 						dx = drawx + jx;
 						dy = drawy + jy;
@@ -169,20 +183,34 @@ class World extends FlxGroup
 							for (i in drawy...desty + 1) {
 								dy = i;
 								dx = drawx;
-								arr[(dy * MAX_WORLD_WIDTH) + dx] = 1;
-								//add borders
-								writeToArr(arr, (dy * MAX_WORLD_WIDTH) + dx - 1, 2, 0);
-								writeToArr(arr, (dy * MAX_WORLD_WIDTH) + dx + 1, 2, 0);
+								
+								var index:Int = (dy * MAX_WORLD_WIDTH) + dx;
+								
+								if (arr[index] == TILE_WALL) {
+									arr[index] = TILE_DOOR;
+								}else{
+									arr[index] = TILE_FLOOR;
+								}
+								
+								writeToArr(arr, (dy * MAX_WORLD_WIDTH) + dx - 1, TILE_WALL, 0);
+								writeToArr(arr, (dy * MAX_WORLD_WIDTH) + dx + 1, TILE_WALL, 0);
 							}
 						}
 						else if (desty == drawy) {
 							for (i in drawx...destx + 1) {
 								dx = i;
 								dy = drawy;
-								arr[(dy * MAX_WORLD_WIDTH) + dx] = 1;
 								
-								writeToArr(arr, ((dy-1) * MAX_WORLD_WIDTH) + dx, 2, 0);
-								writeToArr(arr, ((dy+1) * MAX_WORLD_WIDTH) + dx, 2, 0);
+								var index:Int = (dy * MAX_WORLD_WIDTH) + dx;
+								
+								if (arr[index] == TILE_WALL) {
+									arr[index] = TILE_DOOR;
+								}else{
+									arr[index] = TILE_FLOOR;
+								}
+								
+								writeToArr(arr, ((dy-1) * MAX_WORLD_WIDTH) + dx, TILE_WALL, 0);
+								writeToArr(arr, ((dy+1) * MAX_WORLD_WIDTH) + dx, TILE_WALL, 0);
 							}
 						}
 					}
@@ -197,10 +225,13 @@ class World extends FlxGroup
 		
 		t.solid = true;
 		t.loadMap(arr, "assets/images/tileset.png", TILE_SIZE, TILE_SIZE);
-		for (i in 0...5) {
-			if(i == 1 || i == 0){
+		for (i in 0...10) {
+			if(i == TILE_EMPTY || i == TILE_FLOOR){
 				t.setTileProperties(i, FlxObject.NONE);
-			}else {
+			}else if (i == TILE_DOOR) {
+				t.setTileProperties(i, FlxObject.ANY, onCollideDoorCreature, Creature);
+			}
+			else {
 				t.setTileProperties(i, FlxObject.ANY);
 			}
 		}
@@ -288,6 +319,8 @@ class World extends FlxGroup
 					instance.group_bullets.add(b);
 				}
 				return b;
+			case "dude":
+				return instance.dude;
 		}
 		return null;
 	}
